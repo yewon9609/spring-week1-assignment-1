@@ -10,16 +10,13 @@ import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class DemoHttpHandler implements HttpHandler {
+public class TodoHttpHandler implements HttpHandler {
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Task> tasks = new ArrayList<>();
     private Long idNum = 1L;
-
-    public DemoHttpHandler() {
-       // Task task = new Task();
-    }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -30,18 +27,12 @@ public class DemoHttpHandler implements HttpHandler {
         String id = path.replaceAll("[^0-9]", "");
 
 
-
-//        if (!body.isBlank()){ // 바디가 비어있지 않다면
-//            Task task = toTask(body);
-//            tasks.add(task);
-//        }
-
         String content = ""; // 인텔리제이 콘솔에 나오는 것
 
         if (method.equals("GET") && path.contains("/tasks")){
+            // 여기서 오류 나기 시작함 : socket hang up < 확인 핋요
             if (id.equals("")) {content = tasksToJSON();}
             else { content = taskToJSON(id); }
-            // tasks/{id} 일 때 상세 조회하기 처리 필요
         }
 
         if (method.equals("POST") && path.contains("/tasks")){
@@ -88,7 +79,18 @@ public class DemoHttpHandler implements HttpHandler {
     }
 
     private Task getTask(String id){
-        return tasks.get(Integer.parseInt(id) - 1);
+        try{
+            return tasks.get(Integer.parseInt(id) - 1);
+        } catch (Exception e) {
+            return null;
+        }
+       //Optional<Task> optional = Optional.ofNullable(tasks.get(Integer.parseInt(id) - 1));
+        //return optional.orElse(null);
+
+//        return tasks.stream()
+//                .filter(task -> task.getId().equals(Long.parseLong(id)))
+//                .findFirst()
+//                .orElse(null);
     }
 
     private String tasksToJSON() throws IOException {
@@ -99,7 +101,7 @@ public class DemoHttpHandler implements HttpHandler {
 
     private String taskToJSON(String id) throws IOException {
         OutputStream outputStream = new ByteArrayOutputStream();
-        objectMapper.writeValue(outputStream, getTask(id));
+        objectMapper.writeValue(outputStream, getTask(id));// 여기서 오류남
         return outputStream.toString();
     }
 }
