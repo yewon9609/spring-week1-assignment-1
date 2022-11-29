@@ -20,7 +20,12 @@ public class Task {
         this.title = title;
     }
 
-    public String toString(){
-        return "Task - title : " + title;
+    @Override
+    public String toString() {
+        return "{" +
+                "\"id\":" + id +
+                ",\"title\":\"" + title + '\"' +
+                '}';
     }
+
 }

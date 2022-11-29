@@ -1,7 +1,8 @@
 package com.codesoom.assignment;
 
+import com.codesoom.assignment.controller.TodoHttpController;
+import com.codesoom.assignment.models.HttpStatus;
 import com.codesoom.assignment.models.Task;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -9,99 +10,166 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TodoHttpHandler implements HttpHandler {
     private ObjectMapper objectMapper = new ObjectMapper();
-    private List<Task> tasks = new ArrayList<>();
-    private Long idNum = 1L;
+    private final TodoHttpController todoHttpController;
+
+    public TodoHttpHandler() {
+        this.todoHttpController = new TodoHttpController();
+        this.objectMapper = new ObjectMapper();
+    }
 
     @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        String method = exchange.getRequestMethod();
-        URI uri = exchange.getRequestURI();
-        String path = uri.getPath();
-        String body = getBody(exchange);
-        String id = path.replaceAll("[^0-9]", "");
+    public void handle(HttpExchange exchange) {
+        try {
+            final String requestMethod = exchange.getRequestMethod();
+            final String path = exchange.getRequestURI().getPath().substring(1);
+            OutputStream outputStream = new ByteArrayOutputStream();
+            InputStream requestBody = exchange.getRequestBody();
+            OutputStream responseBody = exchange.getResponseBody();
 
+            validateId(exchange, objectMapper, path, outputStream);
+            getTasks(exchange, objectMapper, requestMethod, path, outputStream, responseBody);
 
-        String content = ""; // 인텔리제이 콘솔에 나오는 것
+            if ("GET".equals(requestMethod) && path.contains("tasks") && path.split("/").length > 1){
+                getTask(exchange, objectMapper, path, outputStream, requestBody, responseBody);
+            }
 
-        if (method.equals("GET") && path.contains("/tasks")){
-            // 여기서 오류 나기 시작함 : socket hang up < 확인 핋요
-            if (id.equals("")) {content = tasksToJSON();}
-            else { content = taskToJSON(id); }
+            if ("POST".equals(requestMethod) && path.equals("tasks")) {
+                insert(exchange, objectMapper, requestBody, responseBody);
+            }
+            if (("PUT".equals(requestMethod) || "PATCH".equals(requestMethod)) && path.contains("tasks")) {
+                update(exchange, objectMapper, path, outputStream, requestBody, responseBody);
+            }
+            if ("DELETE".equals(requestMethod) && path.contains("tasks")) {
+                delete(exchange, objectMapper, path, outputStream, requestBody, responseBody);
+            }
+
+            closeAll(outputStream, requestBody, responseBody);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        if (method.equals("POST") && path.contains("/tasks")){
-            Task task = toTask(body);
-            task.setId(idNum);
-            tasks.add(task);
-            content = taskToJSON(idNum.toString());
-            idNum++;
-
-        }
-
-        if ((method.equals("PATCH") || method.equals("PUT")) && path.contains("/tasks")){
-            // 제목 수정
-            Task task = getTask(id);
-            task.setTitle(toTask(body).getTitle());
-            content = taskToJSON(id);
-        }
-
-        if (method.equals("DELETE") && path.contains("/tasks")){
-            // 삭제
-            tasks.remove(Integer.parseInt(id) - 1);
-        }
-
-        exchange.sendResponseHeaders(200, content.getBytes().length);
-                                    // getBytes() 를 하는 이유 : 영어나 숫자는 상관없지 한국어에서 오류가 생길 수 있음
-        OutputStream outputStream = exchange.getResponseBody();
-        outputStream.write(content.getBytes()); // write 가 byte[] 를 매개변수로 받음
-        outputStream.flush();
-        outputStream.close();
     }
 
-    // 바디를 String 으로 읽어오는 메소드
-    // 바디 ? : 한 칸 띄고 title="어쩌고" 이 부분임
-    private String getBody(HttpExchange exchange){
-        InputStream inputStream = exchange.getRequestBody();
-        String body = new BufferedReader(new InputStreamReader(inputStream))
+    private void validateId(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream) throws IOException {
+        try {
+            if (path.split("/").length <= 1) {return ;}
+        } catch (Exception e) {
+            objectMapper.writeValue(outputStream, Arrays.asList());
+            exchange.sendResponseHeaders(HttpStatus.NOT_FOUND.getCode(), outputStream.toString().getBytes().length);
+            e.printStackTrace();
+        }
+    }
+
+    // CRUD 겹치는 부분 추출해서 통합하는 최적화 작업 진행중
+//    private void request(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream, InputStream requestBody, OutputStream responseBody) throws IOException {
+//        final String id = path.split("/")[1]; // delete, update ,getTask
+//
+//        final String content = new BufferedReader(new InputStreamReader(requestBody))
+//                .lines()
+//                .collect(Collectors.joining("\n"));
+//
+//        if (content.isBlank()) {
+//            return;
+//        }
+//        Task body = objectMapper.readValue(content, Task.class);
+//        body.setId(Long.parseLong(id));
+//
+//
+//
+//        if (!todoHttpController.isExist(id)) {
+//            objectMapper.writeValue(outputStream, Arrays.asList());
+//            exchange.sendResponseHeaders(HttpStatus.NOT_FOUND.getCode(), 0);
+//            closeAll(outputStream, requestBody, responseBody);
+//            return;
+//        }
+//
+//    }
+
+    private void getTask(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream, InputStream requestBody, OutputStream responseBody) throws IOException {
+        final String id = path.split("/")[1];
+
+        if (todoHttpController.isEmpty() || !todoHttpController.isExist(id)) {
+            objectMapper.writeValue(outputStream, Arrays.asList());
+            exchange.sendResponseHeaders(HttpStatus.NOT_FOUND.getCode(), outputStream.toString().getBytes().length);
+            responseBody.write(outputStream.toString().getBytes());
+
+            closeAll(outputStream, requestBody, responseBody);
+            return;
+        }
+
+        objectMapper.writeValue(outputStream, todoHttpController.getTask(id));
+        exchange.sendResponseHeaders(HttpStatus.OK.getCode(), outputStream.toString().getBytes().length);
+        responseBody.write(outputStream.toString().getBytes());
+    }
+
+    private void getTasks(HttpExchange exchange, ObjectMapper objectMapper, String requestMethod, String path, OutputStream outputStream, OutputStream responseBody) throws IOException {
+        if ("GET".equals(requestMethod) && path.contains("tasks") && path.split("/").length == 1){
+            objectMapper.writeValue(outputStream, todoHttpController.getTasks());
+            exchange.sendResponseHeaders(HttpStatus.OK.getCode(), outputStream.toString().getBytes().length);
+            responseBody.write(outputStream.toString().getBytes());
+        }
+    }
+
+    private void insert(HttpExchange exchange, ObjectMapper objectMapper, InputStream requestBody, OutputStream responseBody) throws IOException {
+        String content = new BufferedReader(new InputStreamReader(requestBody))
                 .lines()
                 .collect(Collectors.joining("\n"));
-        return body;
-    }
-
-    private Task toTask(String content) throws JsonProcessingException {
-        return objectMapper.readValue(content, Task.class);
-    }
-
-    private Task getTask(String id){
-        try{
-            return tasks.get(Integer.parseInt(id) - 1);
-        } catch (Exception e) {
-            return null;
+        if (content.isBlank()) {
+            return;
         }
-       //Optional<Task> optional = Optional.ofNullable(tasks.get(Integer.parseInt(id) - 1));
-        //return optional.orElse(null);
-
-//        return tasks.stream()
-//                .filter(task -> task.getId().equals(Long.parseLong(id)))
-//                .findFirst()
-//                .orElse(null);
+        Task inserted = todoHttpController.insert(objectMapper.readValue(content, Task.class));
+        exchange.sendResponseHeaders(HttpStatus.CREATED.getCode(), inserted.toString().getBytes().length);
+        responseBody.write(inserted.toString().getBytes());
     }
 
-    private String tasksToJSON() throws IOException {
-        OutputStream outputStream = new ByteArrayOutputStream();
-        objectMapper.writeValue(outputStream, tasks);
-        return outputStream.toString();
+    private void update(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream, InputStream requestBody, OutputStream responseBody) throws IOException {
+        final String id = path.split("/")[1];
+
+        final String content = new BufferedReader(new InputStreamReader(requestBody))
+                .lines()
+                .collect(Collectors.joining("\n"));
+        if (content.isBlank()) {
+            return;
+        }
+        Task body = objectMapper.readValue(content, Task.class);
+        body.setId(Long.parseLong(id));
+
+        if (!todoHttpController.isExist(id)) {
+            objectMapper.writeValue(outputStream, Arrays.asList());
+            exchange.sendResponseHeaders(HttpStatus.NOT_FOUND.getCode(), 0);
+            closeAll(outputStream, requestBody, responseBody);
+            return;
+        }
+
+        Task updated = todoHttpController.update(body);
+        exchange.sendResponseHeaders(HttpStatus.OK.getCode(), updated.toString().getBytes().length);
+        responseBody.write(updated.toString().getBytes());
     }
 
-    private String taskToJSON(String id) throws IOException {
-        OutputStream outputStream = new ByteArrayOutputStream();
-        objectMapper.writeValue(outputStream, getTask(id));// 여기서 오류남
-        return outputStream.toString();
+    private void delete(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream, InputStream requestBody, OutputStream responseBody) throws IOException {
+        final String id = path.split("/")[1];
+        if (!todoHttpController.isExist(id)) {
+            objectMapper.writeValue(outputStream, Arrays.asList());
+            exchange.sendResponseHeaders(HttpStatus.NOT_FOUND.getCode(), 0);
+            closeAll(outputStream, requestBody, responseBody);
+            return;
+        }
+
+        todoHttpController.delete(id);
+        exchange.sendResponseHeaders(HttpStatus.NO_CONTENT.getCode(), 0);
+    }
+
+    private void closeAll(OutputStream outputStream, InputStream requestBody, OutputStream responseBody) throws IOException {
+        requestBody.close();
+        responseBody.flush();
+        responseBody.close();
+        outputStream.flush();
+        outputStream.close();
     }
 }
