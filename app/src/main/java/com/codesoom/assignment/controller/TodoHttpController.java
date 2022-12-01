@@ -23,7 +23,7 @@ public class TodoHttpController {
     public Task getTask(String id){
         return this.todoList.stream()
                 .filter(t -> t.getId().equals(Long.parseLong(id)))
-                .findFirst() // findAny()와 findFirst()의 차이점?
+                .findAny()
                 .get();
     }
 
