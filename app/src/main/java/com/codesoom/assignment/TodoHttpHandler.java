@@ -26,7 +26,7 @@ public class TodoHttpHandler implements HttpHandler {
     }
 
     @Override
-    public void handle(HttpExchange exchange) {
+    public void handle(HttpExchange exchange) throws IOException{
         try (InputStream requestBody = exchange.getRequestBody();
              OutputStream responseBody = exchange.getResponseBody();
              OutputStream outputStream = new ByteArrayOutputStream()){
@@ -50,7 +50,7 @@ public class TodoHttpHandler implements HttpHandler {
             if ("DELETE".equals(requestMethod) && path.contains("tasks")) {
                 delete(exchange, objectMapper, path, outputStream, requestBody, responseBody);
             }
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
     }
