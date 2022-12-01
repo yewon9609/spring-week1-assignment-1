@@ -1,6 +1,8 @@
 package com.codesoom.assignment.controller;
 
 import com.codesoom.assignment.TodoHttpHandler;
+import com.codesoom.assignment.models.Generator;
+import com.codesoom.assignment.models.Generator;
 import com.codesoom.assignment.models.Task;
 
 import java.util.ArrayList;
@@ -26,7 +28,7 @@ public class TodoHttpController {
     }
 
     public Task insert(Task readValue) {
-        readValue.setId(Task.incrementId());
+        readValue.setId(Generator.incrementId());
         this.todoList.add(readValue);
         return readValue;
     }
