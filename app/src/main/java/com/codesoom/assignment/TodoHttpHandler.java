@@ -27,12 +27,12 @@ public class TodoHttpHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) {
-        try {
+        try (InputStream requestBody = exchange.getRequestBody();
+             OutputStream responseBody = exchange.getResponseBody();
+             OutputStream outputStream = new ByteArrayOutputStream()){
+
             final String requestMethod = exchange.getRequestMethod();
             final String path = exchange.getRequestURI().getPath().substring(1);
-            OutputStream outputStream = new ByteArrayOutputStream();
-            InputStream requestBody = exchange.getRequestBody();
-            OutputStream responseBody = exchange.getResponseBody();
 
             validateId(exchange, objectMapper, path, outputStream);
             getTasks(exchange, objectMapper, requestMethod, path, outputStream, responseBody);
@@ -50,8 +50,6 @@ public class TodoHttpHandler implements HttpHandler {
             if ("DELETE".equals(requestMethod) && path.contains("tasks")) {
                 delete(exchange, objectMapper, path, outputStream, requestBody, responseBody);
             }
-
-            closeAll(outputStream, requestBody, responseBody);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -99,8 +97,6 @@ public class TodoHttpHandler implements HttpHandler {
             objectMapper.writeValue(outputStream, Arrays.asList());
             exchange.sendResponseHeaders(HttpStatus.NOT_FOUND.getCode(), outputStream.toString().getBytes().length);
             responseBody.write(outputStream.toString().getBytes());
-
-            closeAll(outputStream, requestBody, responseBody);
             return;
         }
 
@@ -143,7 +139,6 @@ public class TodoHttpHandler implements HttpHandler {
         if (!todoHttpController.isExist(id)) {
             objectMapper.writeValue(outputStream, Arrays.asList());
             exchange.sendResponseHeaders(HttpStatus.NOT_FOUND.getCode(), 0);
-            closeAll(outputStream, requestBody, responseBody);
             return;
         }
 
@@ -157,19 +152,10 @@ public class TodoHttpHandler implements HttpHandler {
         if (!todoHttpController.isExist(id)) {
             objectMapper.writeValue(outputStream, Arrays.asList());
             exchange.sendResponseHeaders(HttpStatus.NOT_FOUND.getCode(), 0);
-            closeAll(outputStream, requestBody, responseBody);
             return;
         }
 
         todoHttpController.delete(id);
         exchange.sendResponseHeaders(HttpStatus.NO_CONTENT.getCode(), 0);
-    }
-
-    private void closeAll(OutputStream outputStream, InputStream requestBody, OutputStream responseBody) throws IOException {
-        requestBody.close();
-        responseBody.flush();
-        responseBody.close();
-        outputStream.flush();
-        outputStream.close();
     }
 }
