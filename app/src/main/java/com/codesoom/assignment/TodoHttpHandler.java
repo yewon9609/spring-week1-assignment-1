@@ -94,7 +94,7 @@ public class TodoHttpHandler implements HttpHandler {
     private void getTask(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream, InputStream requestBody, OutputStream responseBody) throws IOException {
         final String id = path.split("/")[1];
 
-        if (todoHttpController.isEmpty() || !todoHttpController.isExist(id)) {
+        if (todoHttpController.getTasks().isEmpty() || !todoHttpController.isExist(id)) {
             objectMapper.writeValue(outputStream, Arrays.asList());
             exchange.sendResponseHeaders(HttpStatus.NOT_FOUND.getCode(), outputStream.toString().getBytes().length);
             responseBody.write(outputStream.toString().getBytes());
@@ -138,7 +138,6 @@ public class TodoHttpHandler implements HttpHandler {
             return;
         }
         Task body = objectMapper.readValue(content, Task.class);
-        body.setId(Long.parseLong(id));
 
         if (!todoHttpController.isExist(id)) {
             objectMapper.writeValue(outputStream, Arrays.asList());

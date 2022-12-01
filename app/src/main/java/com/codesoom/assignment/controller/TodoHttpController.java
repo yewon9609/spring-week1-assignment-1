@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TodoHttpController {
-    private List<Task> todoList;
+    private List<Task> todoList; // 이거 잘함
     private Long id;
     public TodoHttpController(){
         this.todoList = new ArrayList<>();
@@ -25,10 +25,6 @@ public class TodoHttpController {
                 .get();
     }
 
-    public boolean isEmpty() {
-        return this.todoList.size() == 0;
-    }
-
     public Task insert(Task readValue) {
         readValue.setId(this.id++);
         this.todoList.add(readValue);
@@ -38,8 +34,7 @@ public class TodoHttpController {
     public Task update(Task body) {
         for (Task todo : todoList) {
             if (todo.getId().equals(body.getId())) {
-                todo.setTitle(body.getTitle());
-                return todo;
+                return todo.updateTitle(body.getTitle());
             }
         }
         return body;

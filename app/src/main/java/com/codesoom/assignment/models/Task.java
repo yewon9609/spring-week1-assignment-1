@@ -4,6 +4,13 @@ public class Task {
     private Long id;
     private String title;
 
+    public Task(){}
+
+    public Task(Long id, String title) {
+        this.id = id;
+        this.title = title;
+    }
+
     public Long getId() {
         return id;
     }
@@ -16,16 +23,14 @@ public class Task {
         return title;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public Task updateTitle(String title) {
+        return new Task(this.id, title);
     }
 
     @Override
     public String toString() {
-        return "{" +
-                "\"id\":" + id +
+        return "{" + "\"id\":" + id +
                 ",\"title\":\"" + title + '\"' +
                 '}';
     }
-
 }
