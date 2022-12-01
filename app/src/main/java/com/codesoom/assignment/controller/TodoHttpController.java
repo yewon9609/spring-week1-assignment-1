@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TodoHttpController {
-    private List<Task> todoList; // 이거 잘함
+    private List<Task> todoList;
     private Long id;
     public TodoHttpController(){
         this.todoList = new ArrayList<>();
@@ -21,12 +21,12 @@ public class TodoHttpController {
     public Task getTask(String id){
         return this.todoList.stream()
                 .filter(t -> t.getId().equals(Long.parseLong(id)))
-                .findFirst()
+                .findFirst() // findAny()와 findFirst()의 차이점?
                 .get();
     }
 
     public Task insert(Task readValue) {
-        readValue.setId(this.id++);
+        readValue.setId(Task.incrementId());
         this.todoList.add(readValue);
         return readValue;
     }
