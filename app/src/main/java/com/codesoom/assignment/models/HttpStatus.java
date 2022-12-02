@@ -1,6 +1,6 @@
 package com.codesoom.assignment.models;
 
-public enum HttpStatus2 {
+public enum HttpStatus2{
     OK(200),
     CREATED(201),
     NO_CONTENT(204),

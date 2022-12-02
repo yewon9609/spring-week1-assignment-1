@@ -1,7 +1,5 @@
 package com.codesoom.assignment.controller;
 
-import com.codesoom.assignment.TodoHttpHandler;
-import com.codesoom.assignment.models.Generator;
 import com.codesoom.assignment.models.Generator;
 import com.codesoom.assignment.models.Task;
 
@@ -11,6 +9,7 @@ import java.util.List;
 public class TodoHttpController {
     private List<Task> todoList;
     private Long id;
+    
     public TodoHttpController(){
         this.todoList = new ArrayList<>();
         this.id = 0L;
@@ -49,5 +48,4 @@ public class TodoHttpController {
     public void delete(String id) {
         todoList.removeIf(t -> t.getId() == Long.parseLong(id));
     }
-
 }
