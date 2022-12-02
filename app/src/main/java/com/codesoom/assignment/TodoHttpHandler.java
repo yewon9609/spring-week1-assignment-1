@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class TodoHttpHandler implements HttpHandler {
     private ObjectMapper objectMapper = new ObjectMapper();
-    private final TodoHttpController todoHttpController = new TodoHttpController();;
+    private final TodoHttpController todoHttpController = new TodoHttpController();
 
     @Override
     public void handle(HttpExchange exchange) throws IOException, IllegalArgumentException {
@@ -40,7 +40,7 @@ public class TodoHttpHandler implements HttpHandler {
                 update(exchange, objectMapper, path, outputStream, requestBody, responseBody);
             }
             if (HttpMethods.DELETE.getMethod().equals(requestMethod) && path.contains("tasks")) {
-                delete(exchange, objectMapper, path, outputStream, requestBody, responseBody);
+                delete(exchange, objectMapper, path, outputStream);
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("GET, POST, PUT, PATCH, DELETE 요청만 가능합니다.");
@@ -63,7 +63,6 @@ public class TodoHttpHandler implements HttpHandler {
     private void get(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream, OutputStream responseBody) throws IOException {
         int rCode = HttpStatus.OK.getCode();
         Object task = null;
-
         try{
             String id = path.split("/")[1];
             validateId(exchange, objectMapper, outputStream, id);
@@ -94,14 +93,13 @@ public class TodoHttpHandler implements HttpHandler {
         if (content.isBlank()) {
             return;
         }
-        Task body = objectMapper.readValue(content, Task.class);
-
         validateId(exchange, objectMapper, outputStream, id);
+        Task body = objectMapper.readValue(content, Task.class);
         Task updated = todoHttpController.update(body);
         response(exchange, responseBody, updated, HttpStatus.OK.getCode());
     }
 
-    private void delete(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream, InputStream requestBody, OutputStream responseBody) throws IOException {
+    private void delete(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream) throws IOException {
         final String id = path.split("/")[1];
         validateId(exchange, objectMapper, outputStream, id);
         todoHttpController.delete(id);
