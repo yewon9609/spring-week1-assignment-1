@@ -1,6 +1,6 @@
 package com.codesoom.assignment.models;
 
-public enum HttpStatus2{
+public enum HttpStatus {
     OK(200),
     CREATED(201),
     NO_CONTENT(204),
@@ -8,7 +8,7 @@ public enum HttpStatus2{
 
     final int code;
 
-    HttpStatus2(int code){
+    HttpStatus(int code){
         this.code = code;
     }
 
