@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 public class TodoHttpHandler implements HttpHandler {
     private ObjectMapper objectMapper = new ObjectMapper();
     private final TodoHttpController todoHttpController = new TodoHttpController();
+    private static final int firstIndex = 1;
 
     @Override
     public void handle(HttpExchange exchange) throws IOException, IllegalArgumentException {
@@ -64,7 +65,7 @@ public class TodoHttpHandler implements HttpHandler {
         int rCode = HttpStatus.OK.value();
         Object task = null;
         try{
-            String id = path.split("/")[1];
+            String id = path.split("/")[firstIndex];
             validateId(exchange, objectMapper, outputStream, id);
             task = todoHttpController.getTask(id);
         } catch (ArrayIndexOutOfBoundsException e) {
@@ -86,7 +87,7 @@ public class TodoHttpHandler implements HttpHandler {
     }
 
     private void update(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream, InputStream requestBody, OutputStream responseBody) throws IOException {
-        final String id = path.split("/")[1];
+        final String id = path.split("/")[firstIndex];
         final String content = new BufferedReader(new InputStreamReader(requestBody))
                 .lines()
                 .collect(Collectors.joining("\n"));
@@ -100,7 +101,7 @@ public class TodoHttpHandler implements HttpHandler {
     }
 
     private void delete(HttpExchange exchange, ObjectMapper objectMapper, String path, OutputStream outputStream) throws IOException {
-        final String id = path.split("/")[1];
+        final String id = path.split("/")[firstIndex];
         validateId(exchange, objectMapper, outputStream, id);
         todoHttpController.delete(id);
         exchange.sendResponseHeaders(HttpStatus.NO_CONTENT.value(), 0);
