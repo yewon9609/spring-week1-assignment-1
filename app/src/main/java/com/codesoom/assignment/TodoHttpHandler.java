@@ -30,18 +30,21 @@ public class TodoHttpHandler implements HttpHandler {
 
             final String requestMethod = exchange.getRequestMethod();
             final String path = exchange.getRequestURI().getPath().substring(1);
-
-            if (HttpMethods.GET.getMethod().equals(requestMethod) && path.contains("tasks")){
-                get(exchange, objectMapper, path, outputStream, responseBody);
-            }
-            if (HttpMethods.POST.getMethod().equals(requestMethod) && path.equals("tasks")) {
-                insert(exchange, objectMapper, requestBody, responseBody);
-            }
-            if ((HttpMethods.PUT.getMethod().equals(requestMethod) || HttpMethods.PATCH.getMethod().equals(requestMethod)) && path.contains("tasks")) {
-                update(exchange, objectMapper, path, outputStream, requestBody, responseBody);
-            }
-            if (HttpMethods.DELETE.getMethod().equals(requestMethod) && path.contains("tasks")) {
-                delete(exchange, objectMapper, path, outputStream);
+            if (path.contains("tasks")){
+                switch(HttpMethods.valueOf(requestMethod)){
+                    case GET:
+                        get(exchange, objectMapper, path, outputStream, responseBody);
+                        break;
+                    case POST:
+                        insert(exchange, objectMapper, requestBody, responseBody);
+                        break;
+                    case PUT: case PATCH:
+                        update(exchange, objectMapper, path, outputStream, requestBody, responseBody);
+                        break;
+                    case DELETE:
+                        delete(exchange, objectMapper, path, outputStream);
+                        break;
+                }
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("GET, POST, PUT, PATCH, DELETE 요청만 가능합니다.");
