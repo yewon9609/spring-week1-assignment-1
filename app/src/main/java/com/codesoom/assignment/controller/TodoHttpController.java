@@ -23,7 +23,7 @@ public class TodoHttpController {
         return this.todoList.stream()
                 .filter(t -> t.getId().equals(Long.parseLong(id)))
                 .findAny()
-                .get();
+                .orElseThrow();
     }
 
     public Task insert(Task readValue) {
