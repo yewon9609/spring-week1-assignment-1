@@ -2,15 +2,16 @@ package com.codesoom.assignment;
 
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
 public class App {
+    @Value("${port}")
+    private static int PORT;
 
     public static void main(String[] args) {
-      Integer PORT = 8000;
-
         try {
             InetSocketAddress address = new InetSocketAddress(PORT);
             HttpServer httpServer = HttpServer.create(address, 0);
