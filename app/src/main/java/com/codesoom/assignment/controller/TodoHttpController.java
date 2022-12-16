@@ -5,6 +5,7 @@ import com.codesoom.assignment.models.Task;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class TodoHttpController {
     private List<Task> todoList;
@@ -23,7 +24,11 @@ public class TodoHttpController {
         return this.todoList.stream()
                 .filter(t -> t.getId().equals(Long.parseLong(id)))
                 .findAny()
-                .orElseThrow();
+                .orElseThrow(() ->
+                    new NoSuchElementException(
+                            "입력한 ID와 일치하는 task가 존재하지 않습니다."
+                    )
+                );
     }
 
     public Task insert(Task readValue) {
